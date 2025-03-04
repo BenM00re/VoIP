@@ -47,7 +47,7 @@ public class AudioReceiverThread implements Runnable {
                 short receivedKey = VoIPpacket.getShort();
 
                 if (receivedKey != 10) {
-                    System.out.println("Rejected packet #" + receivedPacketCount + " with invalid authentication key: " + receivedKey);
+                    System.out.println("DEBUG: Rejected packet #" + receivedPacketCount + " with invalid authentication key: " + receivedKey);
                     continue;
                 }
 
@@ -55,9 +55,9 @@ public class AudioReceiverThread implements Runnable {
                 VoIPpacket.get(encryptedBlock);
 
                 byte[] decryptedBlock = decrypt(encryptedBlock, encryptionKey);
-                player.playBlock(encryptedBlock);
+                player.playBlock(decryptedBlock);
 
-                System.out.println("Received and played packet #" + receivedPacketCount + " with authentication key: " + receivedKey);
+                System.out.println("DEBUG: Received and played packet #" + receivedPacketCount + " with authentication key: " + receivedKey);
 
             } catch (Exception e) {
                 e.printStackTrace();
