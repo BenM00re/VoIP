@@ -82,3 +82,225 @@ public class AudioSenderThread implements Runnable {
         return encrypted;
     }
 }
+
+//SOCKET 2
+class AudioSenderThread2 implements Runnable {
+    static DatagramSocket2 sending_socket;
+    private int packetCount = 0; // Counter for packets
+
+    public void start() {
+        Thread thread = new Thread(this);
+        thread.start();
+    }
+
+    public void run() {
+        InetAddress clientIP;
+        try {
+            clientIP = InetAddress.getByName("localhost");
+        } catch (UnknownHostException e) {
+            throw new RuntimeException(e);
+        }
+
+        int PORT = 55555;
+        AudioRecorder recorder;
+
+        try {
+            recorder = new AudioRecorder();
+        } catch (LineUnavailableException e) {
+            throw new RuntimeException(e);
+        }
+
+        try {
+            sending_socket = new DatagramSocket2();
+        } catch (SocketException e) {
+            throw new RuntimeException(e);
+        }
+
+        boolean running = true;
+        byte encryptionKey = 0x5A; // Simple fixed XOR key
+
+        while (running) {
+            try {
+                byte[] block = recorder.getBlock();
+                byte[] encryptedBlock = encrypt(block, encryptionKey); // Encrypt using simple XOR
+
+                ByteBuffer VoIPpacket = ByteBuffer.allocate(514);
+                //short authenticationKey = (short) ((packetCount % 5 == 0) ? 99 : 10); // Every 5th packet is invalid
+                short authenticationKey = 10; //stable
+                packetCount++;
+
+                VoIPpacket.putShort(authenticationKey);
+                VoIPpacket.put(encryptedBlock);
+
+                DatagramPacket packet = new DatagramPacket(VoIPpacket.array(), 514, clientIP, PORT);
+                sending_socket.send(packet);
+
+                System.out.println("Sent packet #" + packetCount + " with authentication key: " + authenticationKey);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                running = false;
+            }
+        }
+
+        sending_socket.close();
+        recorder.close();
+    }
+
+    // Simplified XOR encryption (single-byte key)
+    private static byte[] encrypt(byte[] data, byte key) {
+        byte[] encrypted = new byte[data.length];
+        for (int i = 0; i < data.length; i++) {
+            encrypted[i] = (byte) (data[i] ^ key); // XOR each byte with the key
+        }
+        return encrypted;
+    }
+}
+
+//SOCKET 3
+class AudioSenderThread3 implements Runnable {
+    static DatagramSocket3 sending_socket;
+    private int packetCount = 0; // Counter for packets
+
+    public void start() {
+        Thread thread = new Thread(this);
+        thread.start();
+    }
+
+    public void run() {
+        InetAddress clientIP;
+        try {
+            clientIP = InetAddress.getByName("localhost");
+        } catch (UnknownHostException e) {
+            throw new RuntimeException(e);
+        }
+
+        int PORT = 55555;
+        AudioRecorder recorder;
+
+        try {
+            recorder = new AudioRecorder();
+        } catch (LineUnavailableException e) {
+            throw new RuntimeException(e);
+        }
+
+        try {
+            sending_socket = new DatagramSocket3();
+        } catch (SocketException e) {
+            throw new RuntimeException(e);
+        }
+
+        boolean running = true;
+        byte encryptionKey = 0x5A; // Simple fixed XOR key
+
+        while (running) {
+            try {
+                byte[] block = recorder.getBlock();
+                byte[] encryptedBlock = encrypt(block, encryptionKey); // Encrypt using simple XOR
+
+                ByteBuffer VoIPpacket = ByteBuffer.allocate(514);
+                //short authenticationKey = (short) ((packetCount % 5 == 0) ? 99 : 10); // Every 5th packet is invalid
+                short authenticationKey = 10; //stable
+                packetCount++;
+
+                VoIPpacket.putShort(authenticationKey);
+                VoIPpacket.put(encryptedBlock);
+
+                DatagramPacket packet = new DatagramPacket(VoIPpacket.array(), 514, clientIP, PORT);
+                sending_socket.send(packet);
+
+                System.out.println("Sent packet #" + packetCount + " with authentication key: " + authenticationKey);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                running = false;
+            }
+        }
+
+        sending_socket.close();
+        recorder.close();
+    }
+
+    // Simplified XOR encryption (single-byte key)
+    private static byte[] encrypt(byte[] data, byte key) {
+        byte[] encrypted = new byte[data.length];
+        for (int i = 0; i < data.length; i++) {
+            encrypted[i] = (byte) (data[i] ^ key); // XOR each byte with the key
+        }
+        return encrypted;
+    }
+}
+
+//SOCKET 4
+class AudioSenderThread4 implements Runnable {
+    static DatagramSocket4 sending_socket;
+    private int packetCount = 0; // Counter for packets
+
+    public void start() {
+        Thread thread = new Thread(this);
+        thread.start();
+    }
+
+    public void run() {
+        InetAddress clientIP;
+        try {
+            clientIP = InetAddress.getByName("localhost");
+        } catch (UnknownHostException e) {
+            throw new RuntimeException(e);
+        }
+
+        int PORT = 55555;
+        AudioRecorder recorder;
+
+        try {
+            recorder = new AudioRecorder();
+        } catch (LineUnavailableException e) {
+            throw new RuntimeException(e);
+        }
+
+        try {
+            sending_socket = new DatagramSocket4();
+        } catch (SocketException e) {
+            throw new RuntimeException(e);
+        }
+
+        boolean running = true;
+        byte encryptionKey = 0x5A; // Simple fixed XOR key
+
+        while (running) {
+            try {
+                byte[] block = recorder.getBlock();
+                byte[] encryptedBlock = encrypt(block, encryptionKey); // Encrypt using simple XOR
+
+                ByteBuffer VoIPpacket = ByteBuffer.allocate(514);
+                //short authenticationKey = (short) ((packetCount % 5 == 0) ? 99 : 10); // Every 5th packet is invalid
+                short authenticationKey = 10; //stable
+                packetCount++;
+
+                VoIPpacket.putShort(authenticationKey);
+                VoIPpacket.put(encryptedBlock);
+
+                DatagramPacket packet = new DatagramPacket(VoIPpacket.array(), 514, clientIP, PORT);
+                sending_socket.send(packet);
+
+                System.out.println("Sent packet #" + packetCount + " with authentication key: " + authenticationKey);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                running = false;
+            }
+        }
+
+        sending_socket.close();
+        recorder.close();
+    }
+
+    // Simplified XOR encryption (single-byte key)
+    private static byte[] encrypt(byte[] data, byte key) {
+        byte[] encrypted = new byte[data.length];
+        for (int i = 0; i < data.length; i++) {
+            encrypted[i] = (byte) (data[i] ^ key); // XOR each byte with the key
+        }
+        return encrypted;
+    }
+}
