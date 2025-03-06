@@ -14,8 +14,8 @@ public class AudioDuplex {
             AudioSenderThread4 sender4 = new AudioSenderThread4();
 
             //CHANGE NUMBER BASED ON SOCKET
-            receiver4.start();
-            sender4.start();
+            receiver.start();
+            sender.start();
 
         } catch (Exception e) {
             e.printStackTrace();
