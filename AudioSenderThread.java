@@ -15,12 +15,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-
 public class AudioSenderThread implements Runnable {
     static DatagramSocket sending_socket;
     private int PacketCount = 0;
     private int SequenceNumber = 0;
     private static final int InterleaveBufferSize = 10;
+
 
     public void start() {
         Thread thread = new Thread(this);
@@ -30,12 +30,12 @@ public class AudioSenderThread implements Runnable {
     public void run() {
         InetAddress clientIP;
         try {
-            clientIP = InetAddress.getByName("localhost");
+            clientIP = InetAddress.getByName(Address.ipAddress);
         } catch (UnknownHostException e) {
             throw new RuntimeException(e);
         }
 
-        int PORT = 55555;
+        int PORT = Address.PORT;
         AudioRecorder recorder;
 
         try {
@@ -152,12 +152,12 @@ class AudioSenderThread2 implements Runnable {
     public void run() {
         InetAddress clientIP;
         try {
-            clientIP = InetAddress.getByName("localhost");
+            clientIP = InetAddress.getByName(Address.ipAddress);
         } catch (UnknownHostException e) {
             throw new RuntimeException(e);
         }
 
-        int PORT = 55555;
+        int PORT = Address.PORT;
         AudioRecorder recorder;
 
         try {
@@ -274,12 +274,12 @@ class AudioSenderThread3 implements Runnable {
     public void run() {
         InetAddress clientIP;
         try {
-            clientIP = InetAddress.getByName("localhost");
+            clientIP = InetAddress.getByName(Address.ipAddress);
         } catch (UnknownHostException e) {
             throw new RuntimeException(e);
         }
 
-        int PORT = 55555;
+        int PORT = Address.PORT;
         AudioRecorder recorder;
 
         try {
@@ -396,12 +396,12 @@ class AudioSenderThread4 implements Runnable {
     public void run() {
         InetAddress clientIP;
         try {
-            clientIP = InetAddress.getByName("localhost");
+            clientIP = InetAddress.getByName(Address.ipAddress);
         } catch (UnknownHostException e) {
             throw new RuntimeException(e);
         }
 
-        int PORT = 55555;
+        int PORT = Address.PORT;
         AudioRecorder recorder;
 
         try {
