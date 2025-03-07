@@ -14,11 +14,15 @@ public class AudioDuplex {
             AudioSenderThread4 sender4 = new AudioSenderThread4();
 
             //CHANGE NUMBER BASED ON SOCKET
-            receiver.start();
-            sender.start();
+            receiver2.start();
+            sender2.start();
 
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
+}
+class Address {
+    public static String ipAddress = "localhost";
+    public static int PORT = 55555;
 }
