@@ -564,14 +564,16 @@ class AudioReceiverThread3 implements Runnable {
 // SOCKET4
 class AudioReceiverThread4 implements Runnable {
     static DatagramSocket4 receivingSocket;
-    private final Set<Integer> receivedSequenceNumbers = new HashSet<>(); // Keep track of received packet IDs
-    private int expectedSequenceNumber = -1; // Start dynamically
-    private final PriorityQueue<PacketData> packetBuffer = new PriorityQueue<>(Comparator.comparingInt(p -> p.sequenceNumber)); // Buffer for out-of-order packets
-    private static final int maxPacketDelay = 40; // How many packets out-of-order we tolerate
-    private static final int bufferSize = 20; // Max number of packets in the buffer
-    private static final int audioBlockSize = 512; // Size of an audio block in bytes
-    private static final int InterleaveBufferSize = 10; // MATCH THE SENDER BUFFER
-    private List<PacketData> DeinterleaveBuffer = new ArrayList<>(); // Buffer for deinterleaving
+    private final Set<Integer> receivedSequenceNumbers = new HashSet<>();
+    private int expectedSequenceNumber = -1;
+    private final PriorityQueue<PacketData> packetBuffer = new PriorityQueue<>(Comparator.comparingInt(p -> p.sequenceNumber));
+    private static final int maxPacketDelay = 40;
+    private static final int bufferSize = 20;
+    private static final int audioBlockSize = 512;
+    private static final int InterleaveBufferSize = 10;
+    private List<PacketData> DeinterleaveBuffer = new ArrayList<>();
+    private byte[] lastPlayedAudio = new byte[audioBlockSize];
+    private static final byte encryptionKey = 0x5A;
 
     private static class PacketData {
         int sequenceNumber;
@@ -593,7 +595,7 @@ class AudioReceiverThread4 implements Runnable {
         AudioPlayer player = null;
 
         try {
-            player = new AudioPlayer(); // Set up the audio player
+            player = new AudioPlayer();
         } catch (LineUnavailableException e) {
             System.err.println("Error initializing AudioPlayer: " + e.getMessage());
             return;
@@ -607,18 +609,18 @@ class AudioReceiverThread4 implements Runnable {
         }
 
         boolean running = true;
-        byte encryptionKey = 0x5A;
 
         try {
             while (running) {
                 try {
-                    byte[] packetData = new byte[518];
+                    byte[] packetData = new byte[520];
                     DatagramPacket packet = new DatagramPacket(packetData, packetData.length);
                     receivingSocket.receive(packet);
 
                     ByteBuffer voipPacket = ByteBuffer.wrap(packet.getData());
                     int receivedSequenceNumber = voipPacket.getInt();
                     short receivedKey = voipPacket.getShort();
+                    short receivedChecksum = voipPacket.getShort();
 
                     if (receivedKey != 10) {
                         System.out.println("For Debugging: Rejected packet (invalid key): " + receivedSequenceNumber);
@@ -637,6 +639,10 @@ class AudioReceiverThread4 implements Runnable {
 
                     byte[] encryptedBlock = new byte[512];
                     voipPacket.get(encryptedBlock);
+                    if (!verifyChecksum(encryptedBlock, receivedChecksum)) {
+                        System.out.println("For Debugging: Rejected packet (invalid checksum): " + receivedSequenceNumber);
+                        continue;
+                    }
                     byte[] decryptedBlock = decrypt(encryptedBlock, encryptionKey);
 
                     DeinterleaveBuffer.add(new PacketData(receivedSequenceNumber, decryptedBlock));
@@ -656,11 +662,22 @@ class AudioReceiverThread4 implements Runnable {
                     }
 
                     while (!packetBuffer.isEmpty() && packetBuffer.peek().sequenceNumber <= expectedSequenceNumber + maxPacketDelay) {
-                        PacketData currentPacket = packetBuffer.poll();
-                        System.out.println("For Debugging: Attempting to play packet: " + currentPacket.sequenceNumber);
-                        player.playBlock(currentPacket.audioData);
-                        System.out.println("For Debugging: Played: " + currentPacket.sequenceNumber);
-                        expectedSequenceNumber = currentPacket.sequenceNumber + 1; // Move to next expected sequence
+                        if (packetBuffer.peek().sequenceNumber == expectedSequenceNumber) {
+                            PacketData currentPacket = packetBuffer.poll();
+                            System.out.println("For Debugging: Attempting to play packet: " + currentPacket.sequenceNumber);
+                            player.playBlock(currentPacket.audioData);
+                            lastPlayedAudio = currentPacket.audioData;
+                            System.out.println("For Debugging: Played: " + currentPacket.sequenceNumber);
+                            expectedSequenceNumber++;
+                        } else if (packetBuffer.peek().sequenceNumber > expectedSequenceNumber) {
+                            System.out.println("For Debugging: Packet loss detected at: " + expectedSequenceNumber);
+                            byte[] splicedAudio = spliceAudio(lastPlayedAudio, packetBuffer.peek().audioData);
+                            player.playBlock(splicedAudio);
+                            System.out.println("For Debugging: Played spliced audio for missing packet: " + expectedSequenceNumber);
+                            expectedSequenceNumber++;
+                        } else {
+                            packetBuffer.poll();
+                        }
                     }
                 } catch (IOException e) {
                     System.err.println("IOException in receiver thread: " + e.getMessage());
@@ -674,6 +691,19 @@ class AudioReceiverThread4 implements Runnable {
         }
     }
 
+    private boolean verifyChecksum(byte[] data, short receivedChecksum) {
+        short calculatedChecksum = calculateChecksum(data);
+        return calculatedChecksum == receivedChecksum;
+    }
+
+    private short calculateChecksum(byte[] data) {
+        int sum = 0;
+        for (byte b : data) {
+            sum += b & 0xFF; // converts byte to an unsigned equivalent by mask
+        }
+        return (short) (sum & 0xFFFF); // return checksum
+    }
+
     private static byte[] decrypt(byte[] data, byte key) {
         return encrypt(data, key);
     }
@@ -685,7 +715,14 @@ class AudioReceiverThread4 implements Runnable {
         }
         return encrypted;
     }
-
+    private byte[] spliceAudio(byte[] prevAudio, byte[] nextAudio) {
+        byte[] splicedAudio = new byte[audioBlockSize];
+        for (int i = 0; i < audioBlockSize; i++) {
+            double t = (double) i / audioBlockSize;
+            splicedAudio[i] = (byte) (prevAudio[i] * (1 - t) + nextAudio[i] * t);
+        }
+        return splicedAudio;
+    }
     private void deinterleave(List<PacketData> packets) {
         System.out.print("For Debugging: packets before deinterleaving: ");
         for (PacketData p : packets) {
@@ -700,4 +737,3 @@ class AudioReceiverThread4 implements Runnable {
         System.out.println("]");
     }
 }
-
