@@ -387,6 +387,7 @@ class AudioSenderThread4 implements Runnable {
     private int PacketCount = 0;
     private int SequenceNumber = 0;
     private static final int InterleaveBufferSize = 10;
+    private static final byte encryptionKey = 0x5A;
 
     public void start() {
         Thread thread = new Thread(this);
@@ -417,7 +418,6 @@ class AudioSenderThread4 implements Runnable {
         }
 
         boolean running = true;
-        byte encryptionKey = 0x5A;
         List<ByteBuffer> interleaveBuffer = new ArrayList<>();
 
         while (running) {
@@ -425,13 +425,14 @@ class AudioSenderThread4 implements Runnable {
                 byte[] block = recorder.getBlock();
                 byte[] encryptedBlock = encrypt(block, encryptionKey);
 
-                ByteBuffer VoIPpacket = ByteBuffer.allocate(518); //4 more for sequence numbers
-                short authenticationKey = 10;
-                PacketCount++;
+                short checksum = calculateChecksum(encryptedBlock);
 
-                VoIPpacket.putInt(SequenceNumber);  // Add sequence number
-                VoIPpacket.putShort(authenticationKey);
+                ByteBuffer VoIPpacket = ByteBuffer.allocate(520); //4 more for sequence numbersVoIPpacket.putInt(SequenceNumber);  // Add sequence number
+                VoIPpacket.putInt(SequenceNumber);
+                VoIPpacket.putShort((short) 10);
+                VoIPpacket.putShort(checksum);
                 VoIPpacket.put(encryptedBlock);
+
 
                 interleaveBuffer.add(VoIPpacket);
 
@@ -455,15 +456,16 @@ class AudioSenderThread4 implements Runnable {
 
 
                     for (ByteBuffer packetToSend : interleavedPackets) {
-                        DatagramPacket packet = new DatagramPacket(packetToSend.array(), 518, clientIP, PORT);
+                        DatagramPacket packet = new DatagramPacket(packetToSend.array(), 520, clientIP, PORT);
                         sending_socket.send(packet);
-                        System.out.println("Sent packet #" + PacketCount + " with sequence number: " + packetToSend.getInt(0) + " and authentication key: " + packetToSend.getShort(4));
+                        System.out.println("Sent packet #" + PacketCount + " with sequence number: " + packetToSend.getInt(0) + " and authentication key: " + packetToSend.getShort(10));
                     }
                     interleaveBuffer.clear();
                 }
 
 
                 SequenceNumber++;
+                PacketCount++;
             } catch (Exception e) {
                 e.printStackTrace();
                 running = false;
@@ -475,7 +477,7 @@ class AudioSenderThread4 implements Runnable {
             List<ByteBuffer> interleavedPackets = interleave(interleaveBuffer);
             for (ByteBuffer packetToSend : interleavedPackets) {
                 try {
-                    DatagramPacket packet = new DatagramPacket(packetToSend.array(), 518, clientIP, PORT);
+                    DatagramPacket packet = new DatagramPacket(packetToSend.array(), 520, clientIP, PORT);
                     sending_socket.send(packet);
                     System.out.println("Sent packet #" + PacketCount + " with sequence number: " + packetToSend.getInt(0) + " and authentication key: " + packetToSend.getShort(4));
 
@@ -488,6 +490,14 @@ class AudioSenderThread4 implements Runnable {
 
         sending_socket.close();
         recorder.close();
+    }
+
+    private short calculateChecksum(byte[] data) {
+        int sum = 0;
+        for (byte b : data) {
+            sum += b & 0xFF; // converts byte to an unsigned equivalent by mask
+        }
+        return (short) (sum & 0xFFFF); // return checksum
     }
 
     private static byte[] encrypt(byte[] data, byte key) {
